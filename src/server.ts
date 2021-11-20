@@ -7,12 +7,19 @@ import {
 } from "graphql-helix";
 import { schema } from "./schema";
 import { initDatabase } from "./database";
+import { PubSub } from 'graphql-subscriptions';
 
 export const server = express();
 
 server.use(express.json());
 
+let pubsub: PubSub;
 server.use("/", async (req, res) => {
+  if (!pubsub) {
+    //in production, use Redis :)
+    pubsub = new PubSub();
+  }
+
   const request = {
     body: req.body,
     headers: req.headers,
@@ -32,7 +39,8 @@ server.use("/", async (req, res) => {
       request,
       schema,
       contextFactory: async () => ({
-        db: await initDatabase()
+        db: await initDatabase(),
+        pubsub
       })
     });
 
